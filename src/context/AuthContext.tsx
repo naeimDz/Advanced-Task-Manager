@@ -1,3 +1,4 @@
+// app/context/AuthContext
 "use client";
 import { useAuth } from '@/hook/useAuth';
 import { createContext, useContext, ReactNode } from 'react';
@@ -24,3 +25,5 @@ export function useAuthContext() {
   }
   return context;
 }
+
+

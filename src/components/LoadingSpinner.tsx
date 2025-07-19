@@ -17,11 +17,14 @@ export const LoadingSpinner = ({
   };
 
   return (
+          <div className="min-h-screen flex items-center justify-center">
+
     <div className={clsx(center && "flex items-center justify-center h-full")}>
       <div className={clsx("relative", sizeMap[size])}>
         <div className="absolute inset-0 rounded-full border-4 border-blue-500 opacity-30 animate-ping"></div>
         <div className="absolute inset-0 rounded-full border-4 border-blue-500 border-t-transparent animate-spin"></div>
       </div>
     </div>
+      </div>
   );
 };

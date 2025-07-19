@@ -1,5 +1,5 @@
 "use client"
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Plus, Search, Eye, EyeOff, Trash2, Link, Network, Brain, BookOpen, Globe, Lock } from 'lucide-react';
 import { useNotes } from '@/hook/useNotes';
 import { ErrorPage } from '@/components/ErrorPage';
@@ -152,46 +152,6 @@ const router = useRouter();
     
     return links;
   };
-
-
-
-  // Render content with links
-const renderContentWithLinks = useCallback((content: string, excludeNoteId?: string) => {
-    console.log("renderContentWithLinks",content);
-    const linkPattern = /\[\[([^\]]+)\]\]/g;
-    const parts: React.ReactNode[] = [];
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
-
-    while ((match = linkPattern.exec(content)) !== null) {
-      if (match.index > lastIndex) {
-        parts.push(content.slice(lastIndex, match.index));
-      }
-      const linkText = match[1]; 
-      parts.push(
-        <span 
-          key={match.index}
-          className="text-blue-600 hover:text-blue-800 cursor-pointer bg-blue-50 px-1 rounded"
-          onClick={(e) => {
-            e.stopPropagation();
-            console.log()
-            const linkedNote = finder.findLinkedNote(linkText,excludeNoteId);
-            if (linkedNote) setSelectedNote(linkedNote as Note);
-          }}
-        >
-          {linkText}
-        </span>
-      );
-      
-      lastIndex = match.index + match[0].length;
-    }
-    
-    if (lastIndex < content.length) {
-      parts.push(content.slice(lastIndex));
-    }
-    
-    return parts;
-}, [finder]);
 
 
    if (error) return <ErrorPage message={error}/>;
