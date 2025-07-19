@@ -1,12 +1,13 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Plus, Search, Eye, EyeOff, Trash2, Link, Network, Brain, BookOpen, Globe, Lock } from 'lucide-react';
 import { useNotes } from '@/hook/useNotes';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { ErrorPage } from '@/components/ErrorPage';
 import { Note } from '@/types/noteType';
-import { formatDate } from '@/lib/dateUtils';
 import { SmartNoteFinder } from '@/lib/linkedNotes';
+import { useRouter } from 'next/navigation';
+import { useAuthContext } from '@/context/AuthContext';
+import { NoteDetailModal } from './components/NoteDetailModal';
 
 
 interface FormData {
@@ -19,6 +20,7 @@ interface FormData {
 const DigitalKnowledgeGarden = () => {
   // Firebase hook
   const { notes, loading, error, isReady,addNote,updateNote,deleteNote } = useNotes();
+const router = useRouter();
 
 
   // Local state
@@ -27,6 +29,19 @@ const DigitalKnowledgeGarden = () => {
   const [filterTags, setFilterTags] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'network' | 'public'>('grid');
   const [showForm, setShowForm] = useState<boolean>(false);
+  const { user } = useAuthContext();
+  // إضافة state منفصل للبحث المؤجل
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300); // انتظار 300ms قبل البحث
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm])
   const [formData, setFormData] = useState<FormData>({
     title: '',
     content: '',
@@ -34,13 +49,18 @@ const DigitalKnowledgeGarden = () => {
     isPublic: false
   });
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const finder = new SmartNoteFinder(notes, {
-  mode: 'single',
-  fuzzySearch: true,
-  maxResults: 5
-});
-  // Extract all tags
-  const allTags = Array.from(new Set(notes.flatMap(note => note.tags)));
+  const finder = useMemo(() => {
+    return new SmartNoteFinder(notes, {
+      mode: 'single',
+      fuzzySearch: true,
+      maxResults: 5
+    });
+}, [notes]); 
+
+    // Extract all tags
+  const allTags = useMemo(() => {
+    return Array.from(new Set(notes.flatMap(note => note.tags)));
+  }, [notes]);
 
   // Filter notes
   const filteredNotes = notes.filter(note => {
@@ -53,6 +73,20 @@ const DigitalKnowledgeGarden = () => {
     return matchesSearch && matchesTags && matchesView;
   });
 
+// إضافة useEffect للاستماع لـ Escape key
+
+  useEffect(() => {
+  const handleEscape = (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && selectedNote) {
+      setSelectedNote(null);
+    }
+  };
+  
+  if (selectedNote) {
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }
+}, [selectedNote]);
 
   // Add note using Firebase hook
   const handleAddNote = async () => {
@@ -85,9 +119,17 @@ const DigitalKnowledgeGarden = () => {
   };
 
   const handleDeleteNote = async (id: string) => {
+    // إغلاق التفاصيل فوراً لتجنب عرض بيانات محذوفة
+    if (selectedNote?.id === id) {
+      setSelectedNote(null);
+    }
+    
     const success = await deleteNote(id);
-    if (success) {
-      setSelectedNote(null); // إغلاق التفاصيل إذا كانت مفتوحة
+    
+    if (!success) {
+      // إذا فشل الحذف، أعد فتح الملاحظة
+      const note = notes.find(n => n.id === id);
+      if (note) setSelectedNote(note);
     }
   };
 
@@ -114,7 +156,8 @@ const DigitalKnowledgeGarden = () => {
 
 
   // Render content with links
-  const renderContentWithLinks = (content: string,excludeNoteId?: string) => {
+const renderContentWithLinks = useCallback((content: string, excludeNoteId?: string) => {
+    console.log("renderContentWithLinks",content);
     const linkPattern = /\[\[([^\]]+)\]\]/g;
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
@@ -148,10 +191,9 @@ const DigitalKnowledgeGarden = () => {
     }
     
     return parts;
-  };
+}, [finder]);
 
 
-    if (!isReady) return <LoadingSpinner />;
    if (error) return <ErrorPage message={error}/>;
 
   return (
@@ -169,21 +211,23 @@ const DigitalKnowledgeGarden = () => {
                 <p className="text-cyan-200/80">حديقة معرفية تفاعلية</p>
               </div>
             </div>
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className="bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 text-white px-6 py-3 rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center gap-2 border border-white/20"
-              disabled={loading}
-            >
-              <Plus className="w-4 h-4" />
-              ملاحظة جديدة
-            </button>
-            <button
-             // onClick={() => next link /user/{uid} uid= actual auth)}
-              className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 text-white px-6 py-3 rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center gap-2 border border-white/20"
-            >
-              <Globe className="w-4 h-4" />
-              عرض الصفحة العامة
-            </button>
+              <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowForm(!showForm)}
+                className="bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 text-white px-6 py-3 rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center gap-2 border border-white/20"
+                disabled={loading}
+              >
+                <Plus className="w-4 h-4" />
+                ملاحظة جديدة
+              </button>
+              <button
+                onClick={() =>   router.push(`/user/${user?.uid}`)}
+                className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 text-white px-6 py-3 rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center gap-2 border border-white/20"
+              >
+                <Globe className="w-4 h-4" />
+                عرض الصفحة العامة
+              </button>
+              </div>
           </div>
 
           {/* Search and Filters */}
@@ -247,6 +291,9 @@ const DigitalKnowledgeGarden = () => {
             ))}
           </div>
         </div>
+{isReady && (
+      <>
+        {/* كامل المحتوى الحالي */}
 
         {/* Add Note Form */}
         {showForm && (
@@ -344,7 +391,10 @@ const DigitalKnowledgeGarden = () => {
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-semibold text-cyan-100 truncate">{note.title}</h3>
                     <div className="flex gap-1">
-                      <button onClick={(e) => { e.stopPropagation();handleDeleteNote(note.id!) }} className="p-1 rounded-lg hover:bg-red-500/20 transition-all">
+                      <button 
+                        onClick={(e) => { e.stopPropagation();handleDeleteNote(note.id!) }} 
+                        aria-label={`حذف الملاحظة: ${note.title}`}
+                        className="p-1 rounded-lg hover:bg-red-500/20 transition-all">
                         <Trash2 className="w-4 h-4 text-red-400 hover:text-red-300" />
                       </button>
                       {note.isPublic ? (
@@ -387,60 +437,16 @@ const DigitalKnowledgeGarden = () => {
             </div>
           </div>
         </div>
-
+      </>
+    )}
       </div>
       {/** Note Detail */}
-        {selectedNote && (
-          <>
-          <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-            onClick={() => setSelectedNote(null)}
-          />
-          <div className="fixed top-0 right-0 h-full w-80 bg-slate-900/95 backdrop-blur-xl shadow-2xl border-l border-white/20 z-50 overflow-y-auto p-4 transition-transform duration-300 transform translate-x-0">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-cyan-100">{selectedNote.title}</h2>
-              <button onClick={() => setSelectedNote(null)} className="text-slate-400 hover:text-red-400 hover:bg-red-500/20 p-2 rounded-lg transition-all">
-                ✕
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="prose prose-sm text-cyan-200/90 prose-headings:text-cyan-100 prose-links:text-blue-400">
-              {renderContentWithLinks(selectedNote.content,selectedNote.id)}
-            </div>
-
-            {/* Tags */}
-            <div className="flex flex-wrap gap-2 mt-4">
-              {selectedNote.tags.map(tag => (
-                <span key={tag} className="bg-gradient-to-r from-purple-500/30 to-pink-500/30 text-purple-200 px-2 py-1 rounded-full text-sm border border-purple-400/30">#{tag}</span>
-              ))}
-            </div>
-
-            {/* Footer */}
-            <div className="text-xs text-slate-400 mt-6">
-              تم الإنشاء: {formatDate(selectedNote.createdAt?.toDate())}
-            </div>
-            <div className="border-t border-white/10 pt-4">
-              <h3 className="font-semibold mb-2 text-cyan-200">الروابط المتصلة:</h3>
-              <div className="space-y-2">
-                {selectedNote.linkedNotes.map(linkedId => {
-                  const linkedNote = finder.findLinkedNote(linkedId,selectedNote.id) as Note;
-                  return linkedNote ? (
-                    <button
-                      key={linkedNote.id!}
-                      onClick={() => setSelectedNote(linkedNote)}
-                      className="block w-full text-left p-3 text-sm bg-white/5 backdrop-blur-sm rounded-xl hover:bg-white/10 border border-white/10 transition-all duration-300 text-cyan-200"
-                    >
-                      {linkedId}
-                    </button>
-                  ) : null;
-                })}
-              </div>
-            </div>
-          </div>
-          </>
-        )}
+      <NoteDetailModal 
+        note={selectedNote}
+        onClose={() => setSelectedNote(null)}
+        onNoteSelect={setSelectedNote}
+        finder={finder}
+      />
 
       {/* Stats */}
         <div className="fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-xl border-t border-white/10 shadow-2xl p-2 ">
