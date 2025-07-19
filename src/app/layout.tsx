@@ -1,7 +1,8 @@
+// app/layout.tsx
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { TasksProvider } from "@/context/TasksContext";
+import { AuthProvider } from "@/context/AuthContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,10 +17,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="ar" dir="rtl">
       <body className={inter.className}>
-      <TasksProvider>{children}</TasksProvider>
-        </body>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
     </html>
   );
 }
