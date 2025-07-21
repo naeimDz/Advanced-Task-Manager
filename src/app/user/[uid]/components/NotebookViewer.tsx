@@ -1,39 +1,43 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, BookOpen, User, Feather } from 'lucide-react';
 import { Note } from '@/types/noteType';
 import NotebookPages from './NotebookPage';
+import { UseNotesService } from '@/hook/useNoteService';
 
-
-interface OpenNotebookProps {
-  publicNotes: Note[],
+interface NotebookViewerProps {
+  notes: Note[];
 }
 
-const NotebookViewer = ({ publicNotes }: OpenNotebookProps) => {
+export default function NotebookViewer({ 
+  notes, 
+}: NotebookViewerProps) {
 
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
 
-  // تصفية الملاحظات
-  const filteredNotes = publicNotes.filter(note => {
-    const matchesSearch = note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         note.content.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesTag = selectedTag === '' || note.tags.includes(selectedTag);
-    return matchesSearch && matchesTag;
+  const notesPerPage = 2;
+
+  const {
+    filteredNotes: currentNotes,
+    totalPages,
+    allTags
+  } = UseNotesService({
+    notes,
+    searchTerm,
+    selectedTag,
+    currentPage,
+    notesPerPage,
   });
 
-  // تقسيم الملاحظات إلى صفحات (ملاحظتان في كل صفحة)
-  const notesPerPage = 2;
-  const totalPages = Math.ceil(filteredNotes.length / notesPerPage);
-  const currentNotes = filteredNotes.slice(currentPage * notesPerPage, (currentPage + 1) * notesPerPage);
-
-  // جميع الوسوم
-    const allTags = [...new Set(publicNotes.flatMap(note => note.tags))];
+useEffect(() => {
+    setCurrentPage(0);
+  }, [searchTerm, selectedTag]);
 
 
-
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 py-8">
       {/* Header */}
@@ -144,4 +148,3 @@ const NotebookViewer = ({ publicNotes }: OpenNotebookProps) => {
   );
 };
 
-export default NotebookViewer;

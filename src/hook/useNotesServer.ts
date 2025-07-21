@@ -1,4 +1,4 @@
-// hooks/useNotes.ts
+// hooks/useNotesServer.ts
 import { useState, useEffect, useCallback, useRef } from "react";
 import { collection, query, where, getDocs, addDoc, Timestamp, updateDoc, doc, deleteDoc } from "firebase/firestore";
 import { db } from "@/firebase/firebase";

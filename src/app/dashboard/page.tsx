@@ -1,7 +1,7 @@
 "use client"
 import React, { useEffect, useMemo, useState } from 'react';
 import { Plus, Search, Eye, EyeOff, Trash2, Link, Network, Brain, BookOpen, Globe, Lock } from 'lucide-react';
-import { useNotes } from '@/hook/useNotes';
+import { useNotes } from '@/hook/useNotesServer';
 import { Note } from '@/types/noteType';
 import { SmartNoteFinder } from '@/lib/linkedNotes';
 import { useRouter } from 'next/navigation';
