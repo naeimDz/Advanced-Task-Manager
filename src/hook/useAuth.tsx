@@ -1,4 +1,3 @@
-// hooks/useAuth.ts
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import { 
@@ -7,16 +6,16 @@ import {
   signOut,
   onAuthStateChanged,
 } from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
+import { auth, db } from "@/app/firebase/firebase";
 import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
-import { AuthError, User } from '@/types/authType';
+import { User } from '@/types/authType';
+import { ServiceResult, createSuccessResult, createErrorResult, ServiceErrorCode } from "@/app/firebase/services/serviceTypes";
 
-// 🎯 Single state object - يقلل re-renders
 type AuthState = {
   user: User | null;
-  isInitialized: boolean; // بدلاً من loading
-  isProcessing: boolean; // للعمليات (login/logout)
-  error: AuthError | null;
+  isInitialized: boolean;
+  isProcessing: boolean;
+  error: ServiceErrorCode | null;
 };
 
 export function useAuth() {
@@ -27,7 +26,6 @@ export function useAuth() {
     error: null,
   });
 
-  // 🚀 Single effect for auth state - تحديث واحد فقط
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
@@ -43,7 +41,6 @@ export function useAuth() {
             createdAt: userData?.createdAt?.toDate() || new Date(),
           };
 
-          // ✅ تحديث واحد شامل
           setState(prev => ({
             ...prev,
             user,
@@ -55,7 +52,7 @@ export function useAuth() {
             ...prev,
             user: null,
             isInitialized: true,
-            error: { code: 'fetch-error', message: 'فشل في جلب بيانات المستخدم', type: 'firestore' }
+            error: ServiceErrorCode.FIRESTORE_ERROR
           }));
         }
       } else {
@@ -71,38 +68,7 @@ export function useAuth() {
     return unsubscribe;
   }, []);
 
-  const handleError = useCallback((err: any): AuthError => {
-    let errorType: AuthError['type'] = 'unknown';
-    let message = 'حدث خطأ غير متوقع';
-
-    if (err.code) {
-      switch (err.code) {
-        case 'auth/popup-closed-by-user':
-          errorType = 'popup';
-          message = 'تم إغلاق النافذة. يرجى المحاولة مرة أخرى.';
-          break;
-        case 'auth/popup-blocked':
-          errorType = 'popup';
-          message = 'تم حظر النافذة المنبثقة. يرجى السماح بالنوافذ المنبثقة.';
-          break;
-        case 'auth/network-request-failed':
-          errorType = 'network';
-          message = 'مشكلة في الاتصال. يرجى التحقق من الإنترنت.';
-          break;
-        case 'permission-denied':
-          errorType = 'firestore';
-          message = 'لا يمكن حفظ البيانات. يرجى المحاولة لاحقاً.';
-          break;
-        default:
-          errorType = 'auth';
-          message = 'فشل في تسجيل الدخول. يرجى المحاولة مرة أخرى.';
-      }
-    }
-
-    return { code: err.code || 'unknown', message, type: errorType };
-  }, []);
-
-  const signInWithGoogle = useCallback(async () => {
+  const signInWithGoogle = useCallback(async (): Promise<ServiceResult<User>> => {
     setState(prev => ({ ...prev, isProcessing: true, error: null }));
 
     try {
@@ -122,29 +88,41 @@ export function useAuth() {
         createdAt: serverTimestamp(),
       }, { merge: true });
 
-      return firebaseUser;
-    } catch (err) {
-      const authError = handleError(err);
-      setState(prev => ({ ...prev, error: authError, isProcessing: false }));
-      throw authError;
+      const user: User = {
+        uid: firebaseUser.uid,
+        name: firebaseUser.displayName,
+        email: firebaseUser.email,
+        photoURL: firebaseUser.photoURL,
+        createdAt: new Date(),
+      };
+
+      return createSuccessResult(user);
+    } catch (error: any) {
+      const code = error.code === 'auth/network-request-failed'
+        ? ServiceErrorCode.NETWORK_ERROR
+        : ServiceErrorCode.UNKNOWN_ERROR;
+
+      setState(prev => ({ ...prev, error: code, isProcessing: false }));
+      return createErrorResult<User>(code, 'فشل في تسجيل الدخول', error);
     } finally {
       setState(prev => ({ ...prev, isProcessing: false }));
     }
-  }, [handleError]);
+  }, []);
 
-  const logout = useCallback(async () => {
+  const logout = useCallback(async (): Promise<ServiceResult<null>> => {
     setState(prev => ({ ...prev, isProcessing: true, error: null }));
 
     try {
       await signOut(auth);
-    } catch (err) {
-      const authError = handleError(err);
-      setState(prev => ({ ...prev, error: authError, isProcessing: false }));
-      throw authError;
+      return createSuccessResult(null);
+    } catch (error: any) {
+      const code = ServiceErrorCode.UNKNOWN_ERROR;
+      setState(prev => ({ ...prev, error: code, isProcessing: false }));
+      return createErrorResult<null>(code, 'فشل في تسجيل الخروج', error);
     } finally {
       setState(prev => ({ ...prev, isProcessing: false }));
     }
-  }, [handleError]);
+  }, []);
 
   const clearError = useCallback(() => {
     setState(prev => ({ ...prev, error: null }));
@@ -152,13 +130,13 @@ export function useAuth() {
 
   return {
     user: state.user,
-    loading: !state.isInitialized, // للتوافق مع الكود الحالي
-    authLoading: state.isProcessing, // للعمليات النشطة
+    loading: !state.isInitialized,
+    authLoading: state.isProcessing,
     error: state.error,
     signInWithGoogle,
     logout,
     clearError,
     isAuthenticated: !!state.user,
-    isReady: state.isInitialized, // 🎯 حالة واضحة للجاهزية
+    isReady: state.isInitialized,
   };
 }

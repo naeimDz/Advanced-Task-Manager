@@ -2,13 +2,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Plus, Search, Eye, EyeOff, Trash2, Link, Network, Brain, BookOpen, Globe, Lock } from 'lucide-react';
 import { useNotes } from '@/hook/useNotes';
-import { ErrorPage } from '@/components/ErrorPage';
 import { Note } from '@/types/noteType';
 import { SmartNoteFinder } from '@/lib/linkedNotes';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/context/AuthContext';
 import { NoteDetailModal } from './components/NoteDetailModal';
-
+import { ErrorDisplay } from '../user/[uid]/components/ErrorDisplay';
 
 interface FormData {
   title: string;
@@ -19,7 +18,7 @@ interface FormData {
 
 const DigitalKnowledgeGarden = () => {
   // Firebase hook
-  const { notes, loading, error, isReady,addNote,updateNote,deleteNote } = useNotes();
+  const { notes , loading, error, isReady,addNote,updateNote,deleteNote } = useNotes();
 const router = useRouter();
 
 
@@ -53,7 +52,8 @@ const router = useRouter();
     return new SmartNoteFinder(notes, {
       mode: 'single',
       fuzzySearch: true,
-      maxResults: 5
+      maxResults: 5,
+      // boostRecent:false
     });
 }, [notes]); 
 
@@ -154,8 +154,17 @@ const router = useRouter();
   };
 
 
-   if (error) return <ErrorPage message={error}/>;
-
+if (error) {
+    return (
+      <ErrorDisplay
+        title="حدث خطأ أثناء تحميل الملاحظات"
+        message="تعذر تحميل بياناتك، حاول مجددًا لاحقًا."
+        code={error}
+        showRetry
+      />
+    );
+  }
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-900 p-4 pb-24">
       <div className="max-w-7xl mx-auto">

@@ -1,57 +1,17 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Search, BookOpen, Calendar, Eye, Link2, User, Feather } from 'lucide-react';
+import { Note } from '@/types/noteType';
+import { formatDate } from '@/lib/dateUtils';
 
-const OpenNotebook = () => {
+
+interface OpenNotebookProps {
+  publicNotes: Note[],
+}
+
+const NotebookViewer = ({ publicNotes }: OpenNotebookProps) => {
   // بيانات وهمية للملاحظات العامة
-  const [publicNotes] = useState([
-    {
-      id: '1',
-      title: "رحلة في عالم الفلسفة",
-      content: 
-      "الفلسفةالفلسفة ليست مجرد تساؤلات مجردة، بل هي محاولة لفهم الوجود والمعنى. كما يقول سقراط: 'الحياة غير المفحوصة لا تستحق العيش'. هذا التأمل يقودنا إلى فهم أعمق لطبيعة المعرفة والحكمة في زمننا المعاصر. ليست مجرد تساؤلات مجردة، بل هي محاولة لفهم الوجود والمعنى. كما يقول سقراط: 'الحياة غير المفحوصة لا تستحق العيش'. هذا التأمل يقودنا إلى فهم أعمق لطبيعة المعرفة والحكمة في زمننا المعاصر."
-      ,
-      authorId: 'ahmed_thinker',
-      isPublic: true,
-      tags: ['فلسفة', 'حكمة', 'تأمل'],
-      linkedNotes: ['2', '3'],
-      createdAt: new Date('2025-01-19'),
-      updatedAt: new Date('2025-01-16')
-    },
-    {
-      id: '2', 
-      title: "فن القراءة العميقة",
-      content: "القراءة الحقيقية تتطلب صبرًا وتأملاً. ليس الهدف هو الانتهاء من أكبر عدد من الكتب، بل استيعاب ما نقرأ وربطه بتجاربنا. كل كتاب جيد يتركنا مختلفين عما كنا عليه قبل قراءته.",
-      authorId: 'ahmed_thinker',
-      isPublic: true,
-      tags: ['قراءة', 'كتب', 'تعلم'],
-      linkedNotes: ['1', '4'],
-      createdAt: new Date('2025-01-14'),
-      updatedAt: new Date('2025-01-15')
-    },
-    {
-      id: '3',
-      title: "الإبداع والروتين",
-      content: "يظن البعض أن الإبداع يتطلب الفوضى والعشوائية، لكن الحقيقة عكس ذلك. الإبداع الحقيقي ينبع من انضباط يومي وممارسة مستمرة. الفنانون والكتاب العظام كانوا أصحاب روتين صارم.",
-      authorId: 'ahmed_thinker',
-      isPublic: true,
-      tags: ['إبداع', 'انضباط', 'فن'],
-      linkedNotes: ['1', '2'],
-      createdAt: new Date('2025-01-13'),
-      updatedAt: new Date('2025-01-14')
-    },
-    {
-      id: '4',
-      title: "التكنولوجيا والإنسانية",
-      content: "نعيش في عصر تتسارع فيه التطورات التقنية بوتيرة مذهلة. السؤال المهم ليس ما يمكن للتكنولوجيا فعله، بل كيف نحافظ على إنسانيتنا وسط هذا التقدم. التوازن هو المفتاح.",
-      authorId: 'ahmed_thinker',
-      isPublic: true,
-      tags: ['تكنولوجيا', 'إنسانية', 'مستقبل'],
-      linkedNotes: ['2'],
-      createdAt: new Date('2025-01-12'),
-      updatedAt: new Date('2025-01-13')
-    }
-  ]);
+
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
@@ -90,15 +50,6 @@ const OpenNotebook = () => {
         );
       }
       return word + ' ';
-    });
-  };
-
-  // تنسيق التاريخ
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('ar', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
     });
   };
 
@@ -178,7 +129,7 @@ const OpenNotebook = () => {
                   <div className="relative z-10">
                     {/* Date in corner */}
                     <div className="absolute -top-4 -right-4 bg-amber-800 text-amber-100 px-3 py-1 rounded-full text-xs font-serif transform rotate-12 shadow-md">
-                      {formatDate(currentNotes[0].createdAt)}
+                      {/*formatDate(currentNotes[0].createdAt.toDate())*/}
                     </div>
 
                     <h2 className="text-2xl font-serif text-amber-900 mb-6 leading-relaxed border-b-2 border-dotted border-amber-400 pb-2">
@@ -231,7 +182,7 @@ const OpenNotebook = () => {
                   <div className="relative z-10">
                     {/* Date in corner */}
                     <div className="absolute -top-4 -left-4 bg-amber-800 text-amber-100 px-3 py-1 rounded-full text-xs font-serif transform -rotate-12 shadow-md">
-                      {formatDate(currentNotes[1].createdAt)}
+                      {/*formatDate(currentNotes[1].createdAt.toDate())*/}
                     </div>
 
                     <h2 className="text-2xl font-serif text-amber-900 mb-6 leading-relaxed border-b-2 border-dotted border-amber-400 pb-2">
@@ -337,4 +288,4 @@ const OpenNotebook = () => {
   );
 };
 
-export default OpenNotebook;
+export default NotebookViewer;

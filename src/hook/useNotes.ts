@@ -1,9 +1,10 @@
 // hooks/useNotes.ts
 import { useState, useEffect, useCallback, useRef } from "react";
 import { collection, query, where, getDocs, addDoc, Timestamp, updateDoc, doc, deleteDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/app/firebase/firebase";
 import { Note } from "@/types/noteType";
 import { useAuthContext } from "@/context/AuthContext";
+import { ServiceErrorCode } from "@/app/firebase/services/serviceTypes";
 
 // 🎯 Simple cache - قابل للتوسع لاحقاً
 const notesCache = new Map<string, Note[]>();
@@ -11,7 +12,7 @@ const notesCache = new Map<string, Note[]>();
 type NotesState = {
   notes: Note[];
   loading: boolean;
-  error: string | null;
+  error: ServiceErrorCode | null;
   isInitialized: boolean;
 };
 
@@ -31,10 +32,10 @@ export function useNotes() {
     // 🚀 Check cache first
     if (notesCache.has(userId)) {
       const cachedNotes = notesCache.get(userId)!;
-      setState(prev => ({ 
-        ...prev, 
-        notes: cachedNotes, 
-        isInitialized: true 
+      setState(prev => ({
+        ...prev,
+        notes: cachedNotes,
+        isInitialized: true
       }));
       return cachedNotes;
     }
@@ -44,26 +45,26 @@ export function useNotes() {
     try {
       const q = query(collection(db, "notes"), where("authorId", "==", userId));
       const snapshot = await getDocs(q);
-      const notes = snapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data() 
+      const notes = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
       } as Note));
 
       // 🎯 Cache and update state in one go
       notesCache.set(userId, notes);
-      setState(prev => ({ 
-        ...prev, 
-        notes, 
-        loading: false, 
-        isInitialized: true 
+      setState(prev => ({
+        ...prev,
+        notes,
+        loading: false,
+        isInitialized: true
       }));
 
       return notes;
     } catch (error) {
-      setState(prev => ({ 
-        ...prev, 
-        error: 'فشل في تحميل الملاحظات', 
-        loading: false 
+      setState(prev => ({
+        ...prev,
+        error: ServiceErrorCode.FIRESTORE_ERROR,
+        loading: false
       }));
       console.error('Error fetching notes:', error);
       return [];
@@ -75,7 +76,7 @@ export function useNotes() {
     if (!authReady) return; // انتظار جاهزية المصادقة
 
     const userId = user?.uid;
-    
+
     if (userId) {
       // 🚀 Only fetch if user changed or not initialized
       if (currentUserRef.current !== userId || !state.isInitialized) {
@@ -103,16 +104,16 @@ export function useNotes() {
 
       const docRef = await addDoc(collection(db, "notes"), newNote);
       const noteWithId = { id: docRef.id, ...newNote } as Note;
-      
+
       // 🎯 Update both cache and state
       const updatedNotes = [...state.notes, noteWithId];
       notesCache.set(user.uid, updatedNotes);
-      
+
       setState(prev => ({ ...prev, notes: updatedNotes }));
-      
+
       return true;
     } catch (error) {
-      setState(prev => ({ ...prev, error: 'فشل في إضافة الملاحظة' }));
+      setState(prev => ({ ...prev, error: ServiceErrorCode.FIRESTORE_ERROR }));
       console.error('Error adding note:', error);
       return false;
     }
@@ -136,16 +137,16 @@ export function useNotes() {
     try {
       // 🎯 حذف من Firebase
       await deleteDoc(doc(db, "notes", noteId));
-      
+
       // 🎯 تحديث الـ cache والـ state
       const updatedNotes = state.notes.filter(note => note.id !== noteId);
       notesCache.set(user.uid, updatedNotes);
-      
+
       setState(prev => ({ ...prev, notes: updatedNotes }));
-      
+
       return true;
     } catch (error) {
-      setState(prev => ({ ...prev, error: 'فشل في حذف الملاحظة' }));
+      setState(prev => ({ ...prev, error: ServiceErrorCode.FIRESTORE_ERROR }));
       console.error('Error deleting note:', error);
       return false;
     }
@@ -153,58 +154,56 @@ export function useNotes() {
 
   // updates: Partial<Note>
   const updateNote = useCallback(async (id: string, updates: Partial<Note>) => {
-  if (!id || !user?.uid) {
-    console.error('Missing note ID or user');
-    return false;
-  }
-
-  // 🔍 التحقق من وجود الملاحظة في الحالة المحلية
-  const noteExists = state.notes.find(note => note.id === id);
-  if (!noteExists) {
-    setState(prev => ({ ...prev, error: 'الملاحظة غير موجودة' }));
-    return false;
-  }
-
-  // 🚫 منع تحديث الحقول الثابتة
-  const { id: _, authorId, createdAt, ...allowedUpdates } = updates;
-
-  try {
-    // 🔄 إضافة updatedAt تلقائياً
-    const updateData = {
-      ...allowedUpdates,
-      updatedAt: Timestamp.now()
-    };
-
-    // 🔥 تحديث Firestore
-    const noteRef = doc(db, "notes", id);
-    await updateDoc(noteRef, updateData);
-
-    // 🎯 تحديث الحالة المحلية والـ cache
-    const updatedNotes = state.notes.map(note => 
-      note.id === id 
-        ? { ...note, ...updateData }
-        : note
-    );
-
-    // 🔄 تحديث Cache
-    if (user.uid) {
-      notesCache.set(user.uid, updatedNotes);
+    if (!id || !user?.uid) {
+      console.error('Missing note ID or user');
+      return false;
     }
 
-    setState(prev => ({ ...prev, notes: updatedNotes }));
-    
-    return true;
+    // 🔍 التحقق من وجود الملاحظة في الحالة المحلية
+    const noteExists = state.notes.find(note => note.id === id);
+    if (!noteExists) {
+      setState(prev => ({ ...prev, error: ServiceErrorCode.NOT_FOUND }));
+      return false;
+    }
 
-  } catch (error) {
-    setState(prev => ({ 
-      ...prev, 
-      error: 'فشل في تحديث الملاحظة' 
-    }));
-    console.error('Error updating note:', error);
-    return false;
-  }
-}, [user?.uid, state.notes]);
+    // 🚫 منع تحديث الحقول الثابتة
+    const { id: _, authorId, createdAt, ...allowedUpdates } = updates;
 
+    try {
+      // 🔄 إضافة updatedAt تلقائياً
+      const updateData = {
+        ...allowedUpdates,
+        updatedAt: Timestamp.now()
+      };
+
+      // 🔥 تحديث Firestore
+      const noteRef = doc(db, "notes", id);
+      await updateDoc(noteRef, updateData);
+
+      // 🎯 تحديث الحالة المحلية والـ cache
+      const updatedNotes = state.notes.map(note =>
+        note.id === id
+          ? { ...note, ...updateData }
+          : note
+      );
+
+      // 🔄 تحديث Cache
+      if (user.uid) {
+        notesCache.set(user.uid, updatedNotes);
+      }
+
+      setState(prev => ({ ...prev, notes: updatedNotes }));
+
+      return true;
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        error: ServiceErrorCode.FIRESTORE_ERROR
+      }));
+      console.error('Error updating note:', error);
+      return false;
+    }
+  }, [user?.uid, state.notes]);
 
   return {
     notes: state.notes,

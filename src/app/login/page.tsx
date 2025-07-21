@@ -4,6 +4,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useAuthContext } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { ErrorDisplay } from '../user/[uid]/components/ErrorDisplay';
 
 export default  function LoginPage() {
   const { user, isReady, signInWithGoogle, authLoading, error } = useAuthContext();
@@ -73,9 +74,12 @@ export default  function LoginPage() {
             )}
           </button>
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
-              <p className="text-red-800 text-sm">{error.message}</p>
-            </div>
+            <ErrorDisplay
+                  title="خطأ في المصادقة"
+                  message="تعذر تسجيل الدخول. حاول مجددًا."
+                  code={error}
+                  showRetry
+                />
           )}
         </div>
       </div>
