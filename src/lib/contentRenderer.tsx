@@ -1,7 +1,7 @@
 // utils/contentRenderer.ts
 export const renderContentWithLinks = (
   content: string,
-  onLinkClick: (linkText: string) => void
+  onLinkClick?: (linkText: string) => void
 ): React.ReactNode[] => {
   const linkPattern = /\[\[([^\]]+)\]\]/g;
   const parts: React.ReactNode[] = [];
@@ -20,7 +20,7 @@ export const renderContentWithLinks = (
         className="text-blue-600 hover:text-blue-800 cursor-pointer bg-blue-50 px-1 rounded transition-colors"
         onClick={(e) => {
           e.stopPropagation();
-          onLinkClick(linkText);
+          onLinkClick!(linkText);
         }}
       >
         {linkText}

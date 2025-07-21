@@ -1,8 +1,8 @@
 // ===================================
-// app/open-notebook/[uid]/components/ErrorDisplay.tsx
+// app/components/ErrorDisplay.tsx
 // ===================================
 
-import { ServiceErrorCode } from "@/app/firebase/services/serviceTypes";
+import { ServiceErrorCode } from "@/firebase/services/serviceTypes";
 import { RetryButton } from "@/components/RetryButton";
 
 

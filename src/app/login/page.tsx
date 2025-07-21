@@ -4,7 +4,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useAuthContext } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { ErrorDisplay } from '../user/[uid]/components/ErrorDisplay';
+import { ErrorDisplay } from '../../components/ErrorDisplay';
 
 export default  function LoginPage() {
   const { user, isReady, signInWithGoogle, authLoading, error } = useAuthContext();

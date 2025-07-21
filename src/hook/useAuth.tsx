@@ -6,10 +6,10 @@ import {
   signOut,
   onAuthStateChanged,
 } from "firebase/auth";
-import { auth, db } from "@/app/firebase/firebase";
+import { auth, db } from "@/firebase/firebase";
 import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { User } from '@/types/authType';
-import { ServiceResult, createSuccessResult, createErrorResult, ServiceErrorCode } from "@/app/firebase/services/serviceTypes";
+import { ServiceResult, createSuccessResult, createErrorResult, ServiceErrorCode } from "@/firebase/services/serviceTypes";
 
 type AuthState = {
   user: User | null;

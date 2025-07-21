@@ -2,12 +2,12 @@
 // app/open-notebook/[uid]/page.tsx
 // ===================================
 
-import { getUserPublicNotes } from "@/app/firebase/services/noteService";
+import { getUserPublicNotes } from "@/firebase/services/noteService";
 import NotebookViewer from "./components/NotebookViewer";
 
 import { notFound } from "next/navigation";
-import { ServiceErrorCode } from "@/app/firebase/services/serviceTypes";
-import { ErrorDisplay } from "./components/ErrorDisplay";
+import { ServiceErrorCode } from "@/firebase/services/serviceTypes";
+import { ErrorDisplay } from "../../../components/ErrorDisplay";
 import { EmptyNotebook, NotFound } from "./components/EmptyNotebook";
 
 interface PageProps {

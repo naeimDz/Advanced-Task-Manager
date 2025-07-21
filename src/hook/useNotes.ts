@@ -1,10 +1,10 @@
 // hooks/useNotes.ts
 import { useState, useEffect, useCallback, useRef } from "react";
 import { collection, query, where, getDocs, addDoc, Timestamp, updateDoc, doc, deleteDoc } from "firebase/firestore";
-import { db } from "@/app/firebase/firebase";
+import { db } from "@/firebase/firebase";
 import { Note } from "@/types/noteType";
 import { useAuthContext } from "@/context/AuthContext";
-import { ServiceErrorCode } from "@/app/firebase/services/serviceTypes";
+import { ServiceErrorCode } from "@/firebase/services/serviceTypes";
 
 // 🎯 Simple cache - قابل للتوسع لاحقاً
 const notesCache = new Map<string, Note[]>();

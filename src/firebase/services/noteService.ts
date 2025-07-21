@@ -2,7 +2,7 @@
 // app/firebase/services/noteService.ts
 // ===================================
 
-import { db } from "@/app/firebase/firebase";
+import { db } from "@/firebase/firebase";
 import { Note } from "@/types/noteType";
 import { 
   ServiceResult, 
@@ -40,7 +40,7 @@ export async function getUserPublicNotes(uid: string): Promise<ServiceResult<Not
       notesRef,
       where("authorId", "==", uid.trim()),
       where("isPublic", "==", true),
-      orderBy("createdAt", "desc") // إعادة تفعيل الترتيب
+    //  orderBy("createdAt", "desc"),
     );
 
     const snapshot = await getDocs(q);

@@ -1,6 +1,6 @@
 // services/seed.ts
 
-import { db } from "../app/firebase/firebase";
+import { db } from "../firebase/firebase";
 import { doc, getDoc, setDoc, collection, addDoc } from "firebase/firestore";
 import { Timestamp } from "firebase/firestore"; // تأكد من استيراد Timestamp
 

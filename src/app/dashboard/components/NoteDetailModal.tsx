@@ -42,6 +42,8 @@ export const NoteDetailModal: React.FC<NoteDetailModalProps> = React.memo(({
       .map(linkedId => finder.findLinkedNote(linkedId, note.id) as Note)
       .filter(Boolean);
   }, [note?.linkedNotes, note?.id, finder]);
+
+  
   const handleLinkClick = useCallback((linkText: string) => {
     const linkedNote = finder.findLinkedNote(linkText, note?.id);
     if (linkedNote) onNoteSelect(linkedNote as Note);

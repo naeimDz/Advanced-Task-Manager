@@ -7,7 +7,7 @@ import { SmartNoteFinder } from '@/lib/linkedNotes';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/context/AuthContext';
 import { NoteDetailModal } from './components/NoteDetailModal';
-import { ErrorDisplay } from '../user/[uid]/components/ErrorDisplay';
+import { ErrorDisplay } from '../../components/ErrorDisplay';
 
 interface FormData {
   title: string;
