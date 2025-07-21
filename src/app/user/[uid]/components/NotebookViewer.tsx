@@ -53,11 +53,6 @@ useEffect(() => {
             </div>
           </div>
           
-          <div className="flex items-center justify-center gap-2 text-amber-800 mb-6">
-            <User className="w-5 h-5" />
-            <span className="font-serif">بقلم: أحمد المفكر</span>
-            <Feather className="w-4 h-4 ml-2" />
-          </div>
 
           {/* Search and Filter */}
           <div className="max-w-2xl mx-auto flex flex-col sm:flex-row gap-4">
@@ -107,7 +102,7 @@ useEffect(() => {
                 disabled={currentPage === 0}
                 className="px-6 py-2 bg-amber-800 text-amber-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-serif hover:bg-amber-900 transition-colors"
               >
-                ← الصفحة السابقة
+               → الصفحة السابقة
               </button>
               
               <div className="flex items-center gap-2">
@@ -131,7 +126,7 @@ useEffect(() => {
                 disabled={currentPage === totalPages - 1}
                 className="px-6 py-2 bg-amber-800 text-amber-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-serif hover:bg-amber-900 transition-colors"
               >
-                الصفحة التالية →
+                الصفحة التالية ←
               </button>
             </div>
 
