@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useState } from 'react';
-import { Search, BookOpen, User, Feather } from 'lucide-react';
+import { Search, BookOpen, } from 'lucide-react';
 import { Note } from '@/types/noteType';
 import NotebookPages from './NotebookPage';
 import { UseNotesService } from '@/hook/useNoteService';
@@ -15,7 +15,7 @@ export default function NotebookViewer({
 
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTag, setSelectedTag] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
 
   const notesPerPage = 2;
@@ -27,14 +27,14 @@ export default function NotebookViewer({
   } = UseNotesService({
     notes,
     searchTerm,
-    selectedTag,
+    selectedTags,
     currentPage,
     notesPerPage,
   });
 
 useEffect(() => {
     setCurrentPage(0);
-  }, [searchTerm, selectedTag]);
+  }, [searchTerm, selectedTags]);
 
 
   
@@ -54,29 +54,44 @@ useEffect(() => {
           </div>
           
 
-          {/* Search and Filter */}
-          <div className="max-w-2xl mx-auto flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 w-5 h-5 text-amber-600" />
-              <input
-                type="text"
-                placeholder="ابحث في الأفكار..."
-                className="w-full pl-12 pr-4 py-3 border-2 border-amber-200 rounded-lg bg-white/70 backdrop-blur-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-200 font-serif"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            
-            <select
-              className="px-4 py-3 border-2 border-amber-200 rounded-lg bg-white/70 backdrop-blur-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-200 font-serif"
-              value={selectedTag}
-              onChange={(e) => setSelectedTag(e.target.value)}
-            >
-              <option value="">جميع المواضيع</option>
+          {/* Search and Filter - Multi-tag version */}
+          <div className="max-w-2xl mx-auto flex flex-col gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-3 w-5 h-5 text-amber-600" />
+            <input
+              type="text"
+              placeholder="ابحث في الأفكار..."
+              className="w-full pl-12 pr-4 py-3 border-2 border-amber-200 rounded-lg bg-white/70 backdrop-blur-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-200 font-serif"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          
+          {/* Multi-tag filter */}
+          <div className="bg-white/70 backdrop-blur-sm border-2 border-amber-200 rounded-lg p-4">
+            <p className="text-amber-800 font-serif mb-3">المواضيع:</p>
+            <div className="flex flex-wrap gap-2">
               {allTags.map(tag => (
-                <option key={tag} value={tag}>{tag}</option>
+                <button
+                  key={tag}
+                  onClick={() => {
+                    setSelectedTags(prev => 
+                      prev.includes(tag) 
+                        ? prev.filter(t => t !== tag)
+                        : [...prev, tag]
+                    );
+                  }}
+                  className={`px-3 py-1 rounded-full text-sm font-serif transition-all ${
+                    selectedTags.includes(tag)
+                      ? 'bg-amber-800 text-amber-100 shadow-md'
+                      : 'bg-amber-200 text-amber-800 hover:bg-amber-300'
+                  }`}
+                >
+                  {tag}
+                </button>
               ))}
-            </select>
+            </div>
+          </div>
           </div>
         </div>
       </div>

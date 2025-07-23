@@ -6,7 +6,7 @@ import { useMemo } from 'react';
 type UseNotesServiceParams = {
   notes: Note[];
   searchTerm?: string;
-  selectedTag?: string;
+  selectedTags?: string[];
   onlyPublic?: boolean;
   currentPage: number;
   notesPerPage?: number;
@@ -15,7 +15,7 @@ type UseNotesServiceParams = {
 export function UseNotesService({
   notes,
   searchTerm = '',
-  selectedTag = '',
+  selectedTags = [],
   onlyPublic = true,
   currentPage,
   notesPerPage = 2,
@@ -27,7 +27,7 @@ export function UseNotesService({
     console.log('📊 filteredNotes - Dependencies:', {
       notesCount: notes.length,
       searchTerm,
-      selectedTag,
+      selectedTags,
       onlyPublic
     });
     
@@ -49,10 +49,12 @@ export function UseNotesService({
     }
 
     // فلترة بالوسم
-    if (selectedTag) {
+     if (selectedTags.length > 0) {                                  
       const beforeTagFilter = result.length;
-      result = result.filter(note => note.tags?.includes(selectedTag));
-      console.log(`🏷️ filteredNotes - Tag filter (${selectedTag}): ${beforeTagFilter} → ${result.length}`);
+      result = result.filter(note => 
+        selectedTags.some(tag => note.tags?.includes(tag))        
+      );
+      console.log(`🏷️ filteredNotes - Tags filter (${selectedTags.join(', ')}): ${beforeTagFilter} → ${result.length}`);
     }
 
     // البحث
@@ -71,7 +73,7 @@ export function UseNotesService({
     console.log('📊 filteredNotes - Final result count:', result.length);
 
     return result;
-  }, [notes, onlyPublic, selectedTag, searchTerm]);
+  }, [notes, onlyPublic, selectedTags, searchTerm]);
 
   // تحسين: فصل حساب الوسوم
   const allTags = useMemo(() => {

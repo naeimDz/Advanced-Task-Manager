@@ -1,25 +1,23 @@
 "use client"
-import React, { useEffect, useMemo, useState } from 'react';
-import { Plus, Search, Eye, EyeOff, Trash2, Link, Network, Brain, BookOpen, Globe, Lock } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Plus, Search, Eye, EyeOff, Trash2, Link2, Network, Brain, BookOpen, Globe, Lock, FlaskConical } from 'lucide-react';
 import { useNotes } from '@/hook/useNotesServer';
 import { Note } from '@/types/noteType';
-import { SmartNoteFinder } from '@/lib/linkedNotes';
+import { SmartNoteFinder } from '@/lib/SmartNoteFinder';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/context/AuthContext';
 import { NoteDetailModal } from './components/NoteDetailModal';
-import { ErrorDisplay } from '../../components/ErrorDisplay';
-
-interface FormData {
-  title: string;
-  content: string;
-  tags: string;
-  isPublic: boolean;
-}
+import { ErrorDisplay } from '../../../components/ErrorDisplay';
+import { UseNotesService } from '@/hook/useNoteService';
+import { useNoteForm } from '@/hook/useNoteForm';
+import { useDebouncedValue } from '@/hook/useDebouncedValue';
+import { useEscapeKey } from '@/hook/useEscapeKey';
+import Link from 'next/link';
 
 const DigitalKnowledgeGarden = () => {
   // Firebase hook
   const { notes , loading, error, isReady,addNote,updateNote,deleteNote } = useNotes();
-const router = useRouter();
+  const router = useRouter();
 
 
   // Local state
@@ -30,93 +28,37 @@ const router = useRouter();
   const [showForm, setShowForm] = useState<boolean>(false);
   const { user } = useAuthContext();
   // إضافة state منفصل للبحث المؤجل
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 300); // انتظار 300ms قبل البحث
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [searchTerm])
-  const [formData, setFormData] = useState<FormData>({
-    title: '',
-    content: '',
-    tags: '',
-    isPublic: false
+  const { filteredNotes, allTags } = UseNotesService({
+    notes,
+    searchTerm: debouncedSearchTerm,
+    selectedTags: filterTags,
+    onlyPublic: viewMode === 'public',
+    currentPage: 0,
+    notesPerPage: notes.length // عرض جميع النتائج
   });
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+
+  const {formData, setFormData, isSubmitting, submit } = useNoteForm( {addNote})
+
   const finder = useMemo(() => {
+      if (notes.length > 0) {
     return new SmartNoteFinder(notes, {
       mode: 'single',
-      fuzzySearch: true,
-      maxResults: 5,
-      // boostRecent:false
-    });
+      fuzzySearch: false,
+      boostRecent:false
+      });
+  };
 }, [notes]); 
-
-    // Extract all tags
-  const allTags = useMemo(() => {
-    return Array.from(new Set(notes.flatMap(note => note.tags)));
-  }, [notes]);
-
-  // Filter notes
-  const filteredNotes = notes.filter(note => {
-    const matchesSearch = note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         note.content.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesTags = filterTags.length === 0 || 
-                       filterTags.some(tag => note.tags.includes(tag));
-    const matchesView = viewMode === 'public' ? note.isPublic : true;
-    
-    return matchesSearch && matchesTags && matchesView;
-  });
 
 // إضافة useEffect للاستماع لـ Escape key
 
-  useEffect(() => {
-  const handleEscape = (e: KeyboardEvent) => {
-    if (e.key === 'Escape' && selectedNote) {
-      setSelectedNote(null);
-    }
-  };
-  
-  if (selectedNote) {
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }
-}, [selectedNote]);
+  useEscapeKey(() => {
+    setSelectedNote(null);
+  }, !!selectedNote);
 
-  // Add note using Firebase hook
-  const handleAddNote = async () => {
-    if (!formData.title.trim() || !formData.content.trim()) {
-      alert('يرجى ملء العنوان والمحتوى');
-      return;
-    }
 
-    setIsSubmitting(true);
-    try {
-      const noteData = {
-        title: formData.title.trim(),
-        content: formData.content.trim(),
-        tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
-        isPublic: formData.isPublic,
-        linkedNotes: extractLinks(formData.content)
-      };
-
-      await addNote(noteData);
-      
-      // Reset form
-      setFormData({ title: '', content: '', tags: '', isPublic: false });
-      setShowForm(false);
-    } catch (error) {
-      console.error('Error adding note:', error);
-      alert('حدث خطأ أثناء إضافة الملاحظة');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleDeleteNote = async (id: string) => {
     // إغلاق التفاصيل فوراً لتجنب عرض بيانات محذوفة
@@ -140,18 +82,6 @@ const router = useRouter();
     }
   };
 
-  // Extract links from text
-  const extractLinks = (text: string) => {
-    const linkPattern = /\[\[([^\]]+)\]\]/g;
-    const links: string[] = [];
-    let match;
-    
-    while ((match = linkPattern.exec(text)) !== null) {
-      links.push(match[1]);
-    }
-    
-    return links;
-  };
 
 
 if (error) {
@@ -220,6 +150,7 @@ if (error) {
                 <BookOpen className="w-4 h-4" />
                 شبكة
               </button>
+             { /*
               <button
                 onClick={() => setViewMode('network')}
                 className={`px-4 py-3 rounded-xl flex items-center gap-2 transition-all duration-300 border border-white/20 ${viewMode === 'network' ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg' : 'bg-white/10 backdrop-blur-sm text-cyan-200 hover:bg-white/20'}`}
@@ -227,6 +158,7 @@ if (error) {
                 <Network className="w-4 h-4" />
                 خريطة
               </button>
+               */}
               <button
                 onClick={() => setViewMode('public')}
                 className={`px-4 py-3 rounded-xl flex items-center gap-2 transition-all duration-300 border border-white/20 ${viewMode === 'public' ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg' : 'bg-white/10 backdrop-blur-sm text-cyan-200 hover:bg-white/20'}`}
@@ -235,6 +167,14 @@ if (error) {
                 عامة
               </button>
             </div>
+              <Link 
+                  className="px-4 py-3 rounded-xl flex items-center gap-2 transition-all duration-300 border border-yellow-400/40 bg-yellow-400/10 text-yellow-300 hover:bg-yellow-400/20 backdrop-blur-sm"
+                  title="جرّب البحث الذكي 👨‍🔬"
+                  href="/smartsearch" 
+                  passHref>
+                  <FlaskConical className="w-4 h-4" />
+                  تجربة بحث ذكية
+              </Link>
           </div>
 
           {/* Tags Filter */}
@@ -307,7 +247,7 @@ if (error) {
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={handleAddNote}
+                  onClick={submit}
                   disabled={isSubmitting || !formData.title.trim() || !formData.content.trim()}
                   className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-6 py-3 rounded-xl hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 border border-white/20"
                 >
@@ -397,7 +337,7 @@ if (error) {
                   
                   <div className="flex justify-between items-center text-xs text-cyan-300">
                     <span className="flex items-center gap-1">
-                      <Link className="w-3 h-3" />
+                      <Link2 className="w-3 h-3" />
                       {note.linkedNotes?.length || 0}
                     </span>
                   </div>

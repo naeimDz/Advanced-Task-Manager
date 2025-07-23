@@ -14,7 +14,7 @@ export async function seedDataIfNeeded() {
   const noteData = {
     title: "👋 مرحبًا بك في MindNotes",
     content: "هذه ملاحظة تجريبية. ابدأ رحلتك المعرفية.",
-    authorId: "7Y9hI0AQrVOetS7qQ1kH7nJZ2pB2", // سيتم استخدام ID مؤلف تجريبي
+    authorId: "test-user", 
     isPublic: true,
     tags: ["فكرة", "تجربة"],
     linkedNotes: [], // لا يوجد روابط في هذه الملاحظة التجريبية

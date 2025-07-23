@@ -2,7 +2,7 @@
 import React, { useMemo, Suspense, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Note } from '@/types/noteType';
-import { SmartNoteFinder } from '@/lib/linkedNotes';
+import { SmartNoteFinder } from '@/lib/SmartNoteFinder';
 import { formatDate } from '@/lib/dateUtils';
 import { useEscapeKey } from '@/hook/useEscapeKey';
 import { renderContentWithLinks } from '@/lib/contentRenderer';
@@ -12,7 +12,7 @@ interface NoteDetailModalProps {
   note: Note | null;
   onClose: () => void;
   onNoteSelect: (note: Note) => void;
-  finder: SmartNoteFinder;
+  finder?: SmartNoteFinder;
 }
 
 // Loading component for Suspense
@@ -39,13 +39,13 @@ export const NoteDetailModal: React.FC<NoteDetailModalProps> = React.memo(({
   const linkedNotes = useMemo(() => {
     if (!note?.linkedNotes) return [];
     return note.linkedNotes
-      .map(linkedId => finder.findLinkedNote(linkedId, note.id) as Note)
+      .map(linkedId => finder!.findLinkedNote(linkedId, note.id) as Note)
       .filter(Boolean);
   }, [note?.linkedNotes, note?.id, finder]);
 
   
   const handleLinkClick = useCallback((linkText: string) => {
-    const linkedNote = finder.findLinkedNote(linkText, note?.id);
+    const linkedNote = finder!.findLinkedNote(linkText, note?.id);
     if (linkedNote) onNoteSelect(linkedNote as Note);
   }, [finder, note?.id, onNoteSelect]);
 

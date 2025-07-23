@@ -40,7 +40,7 @@ export const DEFAULT_SEARCH_OPTIONS: SearchOptions = {
   searchIn: ['title', 'content', 'tags'],
   caseSensitive: false,
   maxResults: 10,
-  minScore: 10,
+  minScore: 33,
   fuzzySearch: true,
   includePartial: true,
   sortBy: 'score',
